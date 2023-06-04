@@ -1,0 +1,191 @@
+```{r}
+library(Seurat)
+library(SeuratObject)
+library(dplyr)
+library(scCustomize)
+library(Nebulosa)
+```
+
+```{r}
+TEC <- readRDS("TEC.rds")
+```
+```{r, fig.width =5, fig.height=3}
+FeaturePlot_scCustom(TEC, features = c("Cdh5","Pecam1") )
+```
+```{r}
+TEC <- readRDS("TEC_EC.rds")
+```
+
+```{r}
+DefaultAssay(TEC) <- "RNA"
+```
+
+
+```{r}
+ncol(TEC)
+```
+
+```{r}
+TEC <- subset(TEC, Pecam1 !=0 & Cdh5 !=0)
+```
+
+```{r}
+TEC <- FindVariableFeatures(TEC, selection.method = "vst", nfeatures = 2000)
+all.genes <- rownames(TEC)
+TEC <- ScaleData(TEC, features = all.genes)
+
+TEC <- RunPCA(TEC, features = VariableFeatures(object = TEC))
+ElbowPlot(TEC)
+```
+
+
+```{r}
+TEC <- FindNeighbors(TEC, dims = 1:20)
+TEC <- FindClusters(TEC, resolution = 0.5)
+TEC <- RunUMAP(TEC, dims = 1:20)
+
+saveRDS(TEC, "TEC_EC.rds")
+```
+
+```{r}
+DimPlot_scCustom(TEC)
+```
+
+```{r}
+DimPlot_scCustom(TEC, group.by = "Cluster")
+```
+```{r}
+DimPlot_scCustom(TEC, group.by = "Cluster", label = TRUE, repel = TRUE)
+```
+
+Checking for contamination
+```{r}
+FeaturePlot_scCustom(TEC, features = c("Hbb.bt", "Neurod1", "Cd63"))
+```
+
+```{r, fig.width=15, fig.height=7}
+FeaturePlot_scCustom(TEC, features = c("Pecam1","Cdh5","Prox1","Lyve1","Pdpn","Ptprc","Flt4","Zeb1","Zeb2","Snai1","Snai2"), reduction = "umap", order = TRUE)
+```
+```{r, fig.width=4, fig.height=3}
+FeaturePlot_scCustom(TEC, features = c("Zeb1","Zeb2","Snai1","Snai2"), reduction = "umap", order = TRUE)
+```
+```{r, fig.width=6, fig.height=3}
+Plot_Density_Custom(TEC, features = c("Zeb1","Zeb2","Snai1","Snai2","Mki67"))
+```
+
+
+```{r}
+Plot_Density_Custom(TEC, features = "Mki67")
+
+FeaturePlot_scCustom(TEC, features = "Mki67")
+```
+
+```{r, fig.height=4}
+DotPlot(TEC, features = c("Zeb1","Zeb2","Snai1","Snai2"), group.by = "Cluster")
+```
+
+NO. OF CELLS EXPRESSING MARKERS
+
+```{r}
+expression <- data.frame(
+    (sum(GetAssayData(TEC)["Pecam1",]!= 0)),
+    (sum(GetAssayData(TEC)["Cdh5",]!= 0)),
+    (sum(GetAssayData(TEC)["Prox1",]!= 0)),
+    (sum(GetAssayData(TEC)["Pdpn",]!= 0)),
+    (sum(GetAssayData(TEC)["Lyve1",]!= 0)),
+    (sum(GetAssayData(TEC)["Ptprc",]!= 0)),
+    (sum(GetAssayData(TEC)["Flt4",]!= 0)),
+    (sum(GetAssayData(TEC)["Zeb1",]!= 0)),
+    (sum(GetAssayData(TEC)["Zeb2",]!= 0)),
+    (sum(GetAssayData(TEC)["Snai1",]!= 0)),
+    (sum(GetAssayData(TEC)["Snai2",]!= 0)))
+
+	expression
+```
+
+AVERAGE EXPRESSION OF MARKERS
+
+```{r}
+avg_exp <- data.frame(
+  AverageExpression(TEC, assay = "RNA", features = "Zeb1", group.by = "Condition"),
+  AverageExpression(TEC, assay = "RNA", features = "Zeb2", group.by = "Condition"),
+  AverageExpression(TEC, assay = "RNA", features = "Snai1", group.by = "Condition"),
+  AverageExpression(TEC, assay = "RNA", features = "Snai2", group.by = "Condition")
+)
+
+avg_exp
+```
+
+Mesenchymal & Endothelial Markers
+```{r}
+AverageExpression(TEC, assay = "RNA", features = "Cdh5", group.by = "Condition")
+AverageExpression(TEC, assay = "RNA", features = "Pecam1", group.by = "Condition")
+AverageExpression(TEC, assay = "RNA", features = "Vim", group.by = "Condition")
+AverageExpression(TEC, assay = "RNA", features = "Fn1", group.by = "Condition")
+```
+
+```{r}
+AverageExpression(TEC, assay = "RNA", features = "Mki67", group.by = "Condition")
+Percent_Expressing(TEC, features = "Mki67", entire_object = TRUE)
+```
+
+
+
+```{r}
+per_feat <- data.frame(
+  Percent_Expressing(TEC, features = "Zeb1", entire_object = TRUE),
+  Percent_Expressing(TEC, features = "Zeb2", entire_object = TRUE),
+  Percent_Expressing(TEC, features = "Snai1", entire_object = TRUE),
+  Percent_Expressing(TEC, features = "Snai2", entire_object = TRUE))
+
+per_feat
+```
+
+```{r}
+no <- data.frame(
+    (sum(TEC@meta.data$Cluster == "activated artery")),
+    (sum(TEC@meta.data$Cluster == "arteries")),
+    (sum(TEC@meta.data$Cluster == "breach cell")),
+    (sum(TEC@meta.data$Cluster == "capillaries type I")),
+    (sum(TEC@meta.data$Cluster == "capillaries type II")),
+    (sum(TEC@meta.data$Cluster == "immature")),
+    (sum(TEC@meta.data$Cluster == "interferon")),
+    (sum(TEC@meta.data$Cluster == "large veins")),
+    (sum(TEC@meta.data$Cluster == "lymphatics")),
+    (sum(TEC@meta.data$Cluster == "neophalanx")),
+    (sum(TEC@meta.data$Cluster == "postcapillary veins")),
+    (sum(TEC@meta.data$Cluster == "pre-breach cell")),
+    (sum(TEC@meta.data$Cluster == "proliferating")),
+    (sum(TEC@meta.data$Cluster == "TEC capillaries")),
+    (sum(TEC@meta.data$Cluster == "tip cell")),
+    (sum(TEC@meta.data$Cluster == "vein")))
+
+```
+
+
+
+EXPRESSION BY CLUSTER
+
+```{r}
+AverageExpression(TEC, assay = "RNA", features = "Zeb1", group.by = "Cluster")
+AverageExpression(TEC, assay = "RNA", features = "Zeb2", group.by = "Cluster")
+AverageExpression(TEC, assay = "RNA", features = "Snai1", group.by = "Cluster")
+AverageExpression(TEC, assay = "RNA", features = "Snai2", group.by = "Cluster")
+AverageExpression(TEC, assay = "RNA", features = "Mki67", group.by = "Cluster")
+
+
+```
+
+```{r}
+  Percent_Expressing(TEC, features = "Zeb1", group_by =  "Cluster")
+  Percent_Expressing(TEC, features = "Zeb2", group_by =  "Cluster")
+  Percent_Expressing(TEC, features = "Snai1", group_by = "Cluster")
+  Percent_Expressing(TEC, features = "Snai2", group_by = "Cluster")
+  Percent_Expressing(TEC, features = "Mki67", group_by = "Cluster")
+```
+
+
+```{r, fig.width=16}
+#DotPlot_scCustom(TEC, features = c("Apln","Cdh5","Erg","Fgfr1","Flt4","Fstl3","Kdr","Incrnah19","Lyve1","Mir126","Mirlet7","Nos3","Pdpn","Pecam1","Prox1","Ptgds","Scl","Tie1","Tie2","Vwf","Wnt5a","Acta2","Cnn1","Col12a1","Col1a1","Col1a2","Col2a1","Col3a1","Col6a1","Ctgf","Fap","Fn1","Lamc2","Ly6a","Mmp14","Mmp2","Mmp9","Notch3","Pcolce","Pdgfrb","S100a4","Serpine1","Tagln","Tgfbi","Tnc","Vim"), group.by = "Cluster")
+```
+

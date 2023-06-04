@@ -1,0 +1,57 @@
+All genes
+```{r}
+
+```
+```{r}
+de_genes <- read.csv("controlvdisease.csv")
+de_genes
+de_genes <-  de_genes[which(de_genes$p_val_adj < 0.05),]
+
+gene_list <- de_genes[which(de_genes$p_val_adj < 0.05),]
+gene_list <- de_genes[["X"]] # extract gene list
+gene_list <- as.character(gene_list)
+gene_list <- unique(gene_list)
+```
+
+```{r}
+eg <- org.Mm.eg.db
+```
+```{r}
+go_result <- enrichGO(gene_list, 
+                      keyType = "SYMBOL",
+                      OrgDb = eg, ont = "BP", 
+                      pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.01,
+                      qvalueCutoff  = 0.05,
+        readable      = TRUE)
+go_plot <- dotplot(go_result)
+print(go_plot)
+```
+UP
+```{r, fig.width=5}
+de_genes <- read.csv("controlvdisease.csv")
+de_genes
+
+gene_list_up <- de_genes[which(de_genes$avg_log2FC > 0 ),]
+gene_list_up <- gene_list_up[["X"]] # extract gene list
+gene_list_up <- as.character(gene_list_up)
+gene_list_up <- unique(gene_list_up)
+
+go_result <- enrichGO(gene_list_up, keyType = "SYMBOL", OrgDb = eg, ont = "ALL")
+go_plot <- dotplot(go_result )
+print(go_plot)
+```
+DOWN
+```{r, fig.width=5}
+gene_list_down <- de_genes[which(de_genes$avg_log2FC < 0),]
+gene_list_down <- gene_list_down[["X"]] # extract gene list
+gene_list_down <- as.character(gene_list_down)
+gene_list_down <- unique(gene_list_down)
+
+go_result <- enrichGO(gene_list_down, keyType = "SYMBOL", OrgDb = eg, ont = "BP", pvalueCutoff = 0.05)
+go_plot <- dotplot(go_result)
+print(go_plot)
+
+
+```
+

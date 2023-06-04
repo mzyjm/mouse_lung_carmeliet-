@@ -1,0 +1,208 @@
+```{r}
+library(Seurat)
+library(SeuratObject)
+library(dplyr)
+library(scCustomize)
+library(patchwork)
+```
+
+```{r}
+NEC <- readRDS("NEC.rds") 
+
+NEC <- readRDS("NEC_EC.rds")
+```
+
+```{r}
+ncol(NEC)
+```
+
+```{r}
+DefaultAssay(NEC) <- "RNA"
+```
+
+SUBSET NEC BY EC MARKERS
+```{r}
+NEC1 <- subset(NEC, Pecam1 !=0 & Cdh5 !=0)
+```
+
+```{r}
+NEC1 <- FindVariableFeatures(NEC1, selection.method = "vst", nfeatures = 2000)
+all.genes <- rownames(NEC1)
+NEC1 <- ScaleData(NEC1, features = all.genes)
+
+NEC1 <- RunPCA(NEC1, features = VariableFeatures(object = NEC1))
+ElbowPlot(NEC1)
+```
+
+
+```{r}
+NEC1 <- FindNeighbors(NEC1, dims = 1:20)
+NEC1 <- FindClusters(NEC1, resolution = 0.5)
+```
+
+```{r}
+NEC1 <- RunUMAP(NEC1, dims = 1:20)
+```
+```{r}
+saveRDS(NEC1, "NEC_EC.rds")
+```
+
+
+```{r}
+DimPlot_scCustom(NEC)
+```
+```{r}
+DimPlot_scCustom(NEC, group.by = "Cluster")
+```
+```{r}
+DimPlot_scCustom(NEC, group.by = "Cluster", label = TRUE, repel = TRUE)
+```
+
+
+```{r}
+DimPlot_scCustom(NEC, group.by = "ZEB1.counter")
+```
+
+CHECKING FOR CONTAMINATION
+```{r}
+FeaturePlot_scCustom(NEC, features = c("Mki67"))
+```
+
+
+```{r, fig.width=15, fig.height=7}
+FeaturePlot_scCustom(NEC, features = c("Pecam1","Cdh5","Prox1","Lyve1","Pdpn","Ptprc","Flt4","Zeb1","Zeb2","Snai1","Snai2"), reduction = "umap", order = TRUE)
+```
+```{r, fig.width=8, fig.height=5}
+FeaturePlot_scCustom(NEC, features = c("Zeb1","Zeb2","Snai1","Snai2"), reduction = "umap", order = TRUE)
+```
+```{r, fig.width=8, fig.height=5}
+p1 <- FeaturePlot_scCustom(NEC, features = c("Zeb1"), reduction = "umap", order = TRUE)
+p2 <-FeaturePlot_scCustom(NEC, features = c("Zeb2"), reduction = "umap", order = TRUE)
+p3 <-FeaturePlot_scCustom(NEC, features = c("Snai1"), reduction = "umap", order = TRUE)
+p4 <-FeaturePlot_scCustom(NEC, features = c("Snai2"), reduction = "umap", order = TRUE)
+
+(p1 | p2)/ (p3 | p4)
+```
+```{r, fig.width=8, fig.height=5}
+Plot_Density_Custom(NEC, features = c("Zeb1", "Zeb2", "Snai1","Snai2"))
+```
+
+```{r}
+Plot_Density_Custom(NEC, features = "Mki67")
+```
+
+NO. OF CELLS EXPRESSING MARKERS
+```{r}
+expression <- data.frame(
+    (sum(GetAssayData(NEC)["Pecam1",]!= 0)),
+    (sum(GetAssayData(NEC)["Cdh5",]!= 0)),
+    (sum(GetAssayData(NEC)["Prox1",]!= 0)),
+    (sum(GetAssayData(NEC)["Pdpn",]!= 0)),
+    (sum(GetAssayData(NEC)["Lyve1",]!= 0)),
+    (sum(GetAssayData(NEC)["Ptprc",]!= 0)),
+    (sum(GetAssayData(NEC)["Flt4",]!= 0)),
+    (sum(GetAssayData(NEC)["Zeb1",]!= 0)),
+    (sum(GetAssayData(NEC)["Zeb2",]!= 0)),
+    (sum(GetAssayData(NEC)["Snai1",]!= 0)),
+    (sum(GetAssayData(NEC)["Snai2",]!= 0)))
+
+	expression
+```
+
+EXPRESSION OF MARKERS OF ALL
+```{r}
+avg_exp <- data.frame(
+  AverageExpression(NEC, assay = "RNA", features = "Zeb1", group.by = "Condition"),
+  AverageExpression(NEC, assay = "RNA", features = "Zeb2", group.by = "Condition"),
+  AverageExpression(NEC, assay = "RNA", features = "Snai1", group.by = "Condition"),
+  AverageExpression(NEC, assay = "RNA", features = "Snai2", group.by = "Condition")
+)
+
+avg_exp
+```
+
+Mesenchymal & Endothelial Markers
+```{r}
+AverageExpression(NEC, assay = "RNA", features = "Cdh5", group.by = "Condition")
+AverageExpression(NEC, assay = "RNA", features = "Pecam1", group.by = "Condition")
+AverageExpression(NEC, assay = "RNA", features = "Vim", group.by = "Condition")
+AverageExpression(NEC, assay = "RNA", features = "Fn1", group.by = "Condition")
+AverageExpression(NEC, assay = "RNA", features = "Mki67", group.by = "Condition")
+```
+
+```{r}
+per_feat <- data.frame(
+  Percent_Expressing(NEC, features = "Zeb1", entire_object = TRUE),
+  Percent_Expressing(NEC, features = "Zeb2", entire_object = TRUE),
+  Percent_Expressing(NEC, features = "Snai1", entire_object = TRUE),
+  Percent_Expressing(NEC, features = "Snai2", entire_object = TRUE))
+
+per_feat
+```
+
+```{r}
+no <- data.frame(
+    (sum(NEC@meta.data$Cluster == "activated artery")),
+    (sum(NEC@meta.data$Cluster == "arteries")),
+    (sum(NEC@meta.data$Cluster == "breach cell")),
+    (sum(NEC@meta.data$Cluster == "capillaries type I")),
+    (sum(NEC@meta.data$Cluster == "capillaries type II")),
+    (sum(NEC@meta.data$Cluster == "immature")),
+    (sum(NEC@meta.data$Cluster == "interferon")),
+    (sum(NEC@meta.data$Cluster == "large veins")),
+    (sum(NEC@meta.data$Cluster == "lymphatics")),
+    (sum(NEC@meta.data$Cluster == "neophalanx")),
+    (sum(NEC@meta.data$Cluster == "postcapillary veins")),
+    (sum(NEC@meta.data$Cluster == "pre-breach cell")),
+    (sum(NEC@meta.data$Cluster == "proliferating")),
+    (sum(NEC@meta.data$Cluster == "TEC capillaries")),
+    (sum(NEC@meta.data$Cluster == "tip cell")),
+    (sum(NEC@meta.data$Cluster == "vein")))
+
+	no
+```
+
+SUBSET FOR DOTPLOT
+```{r}
+NEC_D <- subset(NEC, subset = Cluster != "neophalanx")
+NEC_D <- subset(NEC_D, subset = Cluster != "tip cell")
+NEC_D <- subset(NEC_D, subset = Cluster != "immature")
+```
+
+```{r}
+NEC_D <- FindVariableFeatures(NEC_D, selection.method = "vst", nfeatures = 2000)
+all.genes <- rownames(NEC_D)
+NEC_D <- ScaleData(NEC_D, features = all.genes)
+
+NEC_D <- RunPCA(NEC_D, features = VariableFeatures(object = NEC_D))
+ElbowPlot(NEC_D)
+```
+
+```{r}
+NEC_D <- FindNeighbors(NEC_D, dims = 1:20)
+NEC_D <- FindClusters(NEC_D, resolution = 0.5)
+NEC_D <- RunUMAP(NEC_D, dims = 1:20)
+```
+
+```{r, fig.height=4}
+DotPlot(NEC_D, features = c("Zeb1","Zeb2","Snai1","Snai2"), group.by = "Cluster") 
+```
+
+EXPRESSION BY CLUSTER
+```{r}
+AverageExpression(NEC1, assay = "RNA", features = "Zeb1", group.by = "Cluster")
+AverageExpression(NEC1, assay = "RNA", features = "Zeb2", group.by = "Cluster")
+AverageExpression(NEC1, assay = "RNA", features = "Snai1", group.by = "Cluster")
+AverageExpression(NEC1, assay = "RNA", features = "Snai2", group.by = "Cluster")
+AverageExpression(NEC1, assay = "RNA", features = "Mki67", group.by = "Cluster")
+```
+```{r}
+  Percent_Expressing(NEC1, features = "Zeb1", group_by =  "Cluster")
+  Percent_Expressing(NEC1, features = "Zeb2", group_by =  "Cluster")
+  Percent_Expressing(NEC1, features = "Snai1", group_by = "Cluster")
+  Percent_Expressing(NEC1, features = "Snai2", group_by = "Cluster")
+
+```
+
+
+

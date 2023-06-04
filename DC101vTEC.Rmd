@@ -1,0 +1,206 @@
+```{r}
+library(Seurat)
+library(scCustomize)
+library(dplyr)
+```
+
+```{r}
+TEC <- readRDS("TEC_EC.rds")
+DC101 <- readRDS("DC101_EC.rds")
+```
+
+
+```{r}
+combined.list <- lapply(X= list(TEC,DC101), FUN = function(x) {
+  x<- NormalizeData(x)
+  x<- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+})
+
+features <- SelectIntegrationFeatures(object.list = combined.list)
+```
+
+```{r}
+anchors <- FindIntegrationAnchors(object.list = combined.list, anchor.features = features)
+```
+```{r}
+combined <- IntegrateData(anchorset = anchors)
+```
+```{r}
+DefaultAssay(combined) <- "integrated"
+```
+
+```{r}
+combined <- ScaleData(combined, verbose = FALSE)
+combined <- RunPCA(combined, verbose = FALSE)
+combined <- RunUMAP(combined, reduction = "pca", dims = 1:30)
+combined <- FindNeighbors(combined, reduction = "pca", dims = 1:30)
+combined <- FindClusters(combined, resolution = 0.5)
+```
+```{r, fig.width=15}
+p1 <- DimPlot_scCustom(combined, reduction = "umap", group.by = "Condition")
+p2 <- DimPlot_scCustom(combined, reduction = "umap", label = TRUE, repel = TRUE)
+p1 + p2
+```
+```{r, fig.width=10}
+DimPlot_scCustom(combined)
+```
+```{r, fig.width=15, fig.height=7}
+DimPlot_scCustom(combined, split.by = "Condition", group.by = "Cluster")
+```
+```{r}
+DefaultAssay(combined) <- "RNA"
+```
+
+```{R}
+Idents(combined) <- combined@meta.data$Condition
+Idents(combined)
+```
+Control v Disease DEG
+```{r}
+tecVdc101 <- FindMarkers(combined, ident.1 = "DC101", ident.2 = "TEC")
+tecVdc101
+
+write.csv(tecVdc101, "TECvDC101.csv")
+```
+
+
+```{r}
+Idents(combined) <- combined@meta.data$Cluster
+Idents(combined)
+```
+```{r}
+combined$celltype.stim <- paste(Idents(combined), combined$Condition, sep = "_")
+combined$celltype <- Idents(combined)
+Idents(combined) <- "celltype.stim"
+Idents(combined)
+```
+```{r, fig.width= 4, fig.height=6}
+DefaultAssay(combined) <- "RNA"
+```
+```{r, fig.height= 15, fig.width=10}
+DotPlot_scCustom(combined, features = c("Zeb1","Zeb2","Snai1","Snai2","Mki67"), group.by = "celltype.stim") + RotatedAxis()
+```
+```{r}
+```
+
+```{r}
+aa<- FindMarkers(combined, ident.1 = "activated artery_DC101", ident.2 = "activated artery_TEC")
+aa
+
+write.csv(aa, "aaDC101VaaTEC.csv")
+```
+
+```{r}
+art<- FindMarkers(combined, ident.1 = "arteries_DC101", ident.2 = "arteries_TEC")
+art
+
+write.csv(art, "artDC101VartTEC.csv")
+```
+```{r}
+breach <- FindMarkers(combined, ident.1 = "breach cell_DC101", ident.2 = "breach cell_TEC")
+breach
+
+write.csv(breach, "breDC101vbreTEC.csv")
+```
+
+```{r}
+T1 <- FindMarkers(combined, ident.1 = "capillaries type I_DC101", ident.2 = "capillaries type I_TEC")
+T1
+write.csv(T1, "t1DC101Vt1TEC.csv")
+```
+```{r}
+T2 <- FindMarkers(combined, ident.1 = "capillaries type II_DC101", ident.2 = "capillaries type II_TEC")
+T2
+
+write.csv(T2, "t2DC101Vt2TEC.csv")
+```
+
+```{r}
+im <- FindMarkers(combined, ident.1 = "immature_DC101", ident.2 = "immature_TEC")
+im
+
+write.csv(im, "imDC101VimTEC.csv")
+```
+
+
+```{r}
+int <- FindMarkers(combined, ident.1 = "interferon_DC101", ident.2 = "interferon_TEC")
+int
+
+write.csv(int, "intDC101VintTEC.csv")
+```
+
+
+
+```{r}
+lv <- FindMarkers(combined, ident.1 = "large veins_DC101", ident.2 = "large veins_TEC")
+lv
+
+write.csv(lv, "lvDC101VlvTEC.csv")
+```
+
+
+```{r}
+LEC <- FindMarkers (combined, ident.1 = "lymphatics_DC101", ident.2 = "lymphatics_TEC")
+LEC
+
+write.csv(LEC, "lecDC101VlecTEC.csv")
+```
+
+```{r}
+neo <- FindMarkers (combined,, ident.1 = "neophalanx_DC101", ident.2 = "neophalanx_TEC")
+neo
+
+write.csv(neo, "neoDC101VneoTEC.csv")
+```
+
+
+```{r}
+pcv1 <- FindMarkers (combined, ident.1 = "postcapillary veins_DC101", ident.2 = "postcapillary veins_TEC")
+pcv1
+
+write.csv(pcv1, "pcvDC101VpcvTEC.csv")
+```
+
+```{r}
+prebreach1 <- FindMarkers (combined, ident.1 = "pre-breach cell_DC101", ident.2 = "pre-breach cell_TEC")
+prebreach1
+
+write.csv(prebreach1, "prebDC101VprebTEC.csv")
+```
+
+
+```{r}
+prolif1 <- FindMarkers (combined, ident.1 = "proliferating_DC101", ident.2 = "proliferating_TEC")
+prolif1
+
+write.csv(prolif1, "prolifDC101VprolifTEC.csv")
+```
+
+```{r}
+TEC_cap1 <- FindMarkers (combined, ident.1 = "TEC capillaries_DC101", ident.2 = "TEC capillaries_TEC")
+TEC_cap1
+
+write.csv(TEC_cap1, "TECcapDC101vTECcapTEC.csv")
+```
+
+```{r}
+tip1 <- FindMarkers (combined, ident.1 = "tip cell_DC101", ident.2 =  "tip cell_TEC")
+tip1
+
+write.csv(tip1, "tipDC101VtipTEC.csv")
+```
+
+```{r}
+vein <- FindMarkers (combined, ident.1 = "vein_DC101", ident.2 = "vein_TEC")
+vein
+
+write.csv(vein, "veinDC101VveinTEC.csv")
+```
+
+
+
+
+
+
+

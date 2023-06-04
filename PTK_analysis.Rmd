@@ -1,0 +1,172 @@
+```{r}
+library(Seurat)
+library(SeuratObject)
+library(dplyr)
+library(scCustomize)
+```
+
+```{r}
+PTK <- readRDS("PTK_EC.rds") 
+
+ncol(PTK)
+```
+
+```{r}
+DefaultAssay(PTK) <- "RNA"
+```
+
+
+SUBSET PTK BY EC MARKERS
+```{r}
+PTK <- subset(PTK, Pecam1 !=0 & Cdh5 !=0)
+```
+
+```{r}
+PTK <- FindVariableFeatures(PTK, selection.method = "vst", nfeatures = 2000)
+all.genes <- rownames(PTK)
+PTK <- ScaleData(PTK, features = all.genes)
+
+PTK <- RunPCA(PTK, features = VariableFeatures(object = PTK))
+ElbowPlot(PTK)
+```
+
+
+```{r}
+PTK <- FindNeighbors(PTK, dims = 1:20)
+PTK <- FindClusters(PTK, resolution = 0.5)
+PTK <- RunUMAP(PTK, dims = 1:20)
+```
+```{r}
+saveRDS(PTK, "PTK_EC.rds")
+```
+
+
+```{r, fig.width=10}
+DimPlot_scCustom(PTK)
+```
+```{r, fig.width=10}
+DimPlot_scCustom(PTK, label = FALSE)
+```
+
+```{r,fig.width=10}
+DimPlot_scCustom(PTK, group.by = "Cluster")
+```
+```{r,fig.width=10}
+DimPlot_scCustom(PTK, group.by = "Cluster", label = TRUE, repel = TRUE)
+```
+
+```{r, fig.width=10}
+DimPlot_scCustom(PTK, group.by = "ZEB1.counter")
+```
+
+CHECKING FOR CONTAMINATION
+```{r}
+FeaturePlot_scCustom(PTK, features = c("Hbb.bt", "Neurod1", "Cd63"))
+```
+
+```{r, fig.width=15, fig.height=9}
+FeaturePlot_scCustom(PTK, features = c("Pecam1","Cdh5","Prox1","Lyve1","Pdpn","Ptprc","Flt4","Zeb1","Zeb2","Snai1","Snai2"), reduction = "umap", order = TRUE)
+```
+```{R}
+Plot_Density_Custom(PTK, features = "Mki67")
+```
+
+NO. OF CELLS EXPRESSING MARKERS
+```{r}
+expression <- data.frame(
+    (sum(GetAssayData(PTK)["Pecam1",]!= 0)),
+    (sum(GetAssayData(PTK)["Cdh5",]!= 0)),
+    (sum(GetAssayData(PTK)["Prox1",]!= 0)),
+    (sum(GetAssayData(PTK)["Pdpn",]!= 0)),
+    (sum(GetAssayData(PTK)["Lyve1",]!= 0)),
+    (sum(GetAssayData(PTK)["Ptprc",]!= 0)),
+    (sum(GetAssayData(PTK)["Flt4",]!= 0)),
+    (sum(GetAssayData(PTK)["Zeb1",]!= 0)),
+    (sum(GetAssayData(PTK)["Zeb2",]!= 0)),
+    (sum(GetAssayData(PTK)["Snai1",]!= 0)),
+    (sum(GetAssayData(PTK)["Snai2",]!= 0)))
+
+	expression
+```
+
+EXPRESSION OF MARKERS OF ALL
+```{r}
+avg_exp <- data.frame(
+  AverageExpression(PTK, assay = "RNA", features = "Zeb1", group.by = "Condition"),
+  AverageExpression(PTK, assay = "RNA", features = "Zeb2", group.by = "Condition"),
+  AverageExpression(PTK, assay = "RNA", features = "Snai1", group.by = "Condition"),
+  AverageExpression(PTK, assay = "RNA", features = "Snai2", group.by = "Condition")
+)
+
+avg_exp
+```
+Mesenchymal & Endothelial Markers
+```{r}
+AverageExpression(PTK, assay = "RNA", features = "Cdh5", group.by = "Condition")
+AverageExpression(PTK, assay = "RNA", features = "Pecam1", group.by = "Condition")
+AverageExpression(PTK, assay = "RNA", features = "Vim", group.by = "Condition")
+AverageExpression(PTK, assay = "RNA", features = "Fn1", group.by = "Condition")
+```
+```{R}
+AverageExpression(PTK, assay = "RNA", features = "Mki67", group.by = "Condition")
+Percent_Expressing(PTK, features = "Mki67", group_by = "Condition")
+```
+
+```{r}
+per_feat <- data.frame(
+  Percent_Expressing(PTK, features = "Zeb1", group_by = "Condition"),
+  Percent_Expressing(PTK, features = "Zeb2", group_by = "Condition"),
+  Percent_Expressing(PTK, features = "Snai1", group_by = "Condition"),
+  Percent_Expressing(PTK, features = "Snai2", group_by = "Condition"))
+
+per_feat
+```
+```{r}
+no <- data.frame(
+    (sum(PTK@meta.data$Cluster == "activated artery")),
+    (sum(PTK@meta.data$Cluster == "arteries")),
+    (sum(PTK@meta.data$Cluster == "breach cell")),
+    (sum(PTK@meta.data$Cluster == "capillaries type I")),
+    (sum(PTK@meta.data$Cluster == "capillaries type II")),
+    (sum(PTK@meta.data$Cluster == "immature")),
+    (sum(PTK@meta.data$Cluster == "interferon")),
+    (sum(PTK@meta.data$Cluster == "large veins")),
+    (sum(PTK@meta.data$Cluster == "lymphatics")),
+    (sum(PTK@meta.data$Cluster == "neophalanx")),
+    (sum(PTK@meta.data$Cluster == "postcapillary veins")),
+    (sum(PTK@meta.data$Cluster == "pre-breach cell")),
+    (sum(PTK@meta.data$Cluster == "proliferating")),
+    (sum(PTK@meta.data$Cluster == "TEC capillaries")),
+    (sum(PTK@meta.data$Cluster == "tip cell")),
+    (sum(PTK@meta.data$Cluster == "vein")))
+
+no
+```
+```{r}
+DotPlot_scCustom(PTK, features = c("Zeb1","Zeb2","Snai1","Snai2"), group.by = "Cluster")
+```
+
+
+EXPRESSION BY CLUSTER
+```{r}
+AverageExpression(PTK, assay = "RNA", features = "Zeb1", group.by = "Cluster")
+AverageExpression(PTK, assay = "RNA", features = "Zeb2", group.by = "Cluster")
+AverageExpression(PTK, assay = "RNA", features = "Snai1", group.by = "Cluster")
+AverageExpression(PTK, assay = "RNA", features = "Snai2", group.by = "Cluster")
+AverageExpression(PTK, assay = "RNA", features = "Mki67", group.by = "Cluster")
+```
+```{r}
+Percent_Expressing(PTK, features = "Zeb1", group_by =  "Cluster")
+Percent_Expressing(PTK, features = "Zeb2", group_by =  "Cluster")
+Percent_Expressing(PTK, features = "Snai1", group_by = "Cluster")
+Percent_Expressing(PTK, features = "Snai2", group_by = "Cluster")
+Percent_Expressing(PTK, features = "Mki67", group_by = "Cluster")
+```
+```{r}
+DotPlot_scCustom(PTK, features = c("Zeb1","Zeb2","Snai1","Snai2","Mki67"), group.by = "Cluster")
+```
+
+```{r, fig.width=25}
+#DotPlot_scCustom(PTK, features = c("Apln","Cdh5","Erg","Fgfr1","Flt4","Fstl3","Kdr","Lyve1","Nos3","Pdpn","Pecam1","Prox1","Ptgds","Scl","Tie1","Tie2","Vwf","Wnt5a","Acta2","Cnn1","Col12a1","Col1a1","Col1a2","Col2a1","Col3a1","Col6a1","Ctgf","Fap","Fn1","Lamc2","Ly6a","Mmp14","Mmp2","Mmp9","Notch3","Pcolce","Pdgfrb","Ki67"), group.by = "Cluster")
+```
+
